@@ -3,6 +3,7 @@ package cn.tursom.treediagram.modloader
 import cn.tursom.treediagram.modinterface.*
 import cn.tursom.treediagram.router
 import io.vertx.ext.web.Router
+import io.vertx.ext.web.handler.BodyHandler
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.URL
@@ -177,7 +178,7 @@ object ModManager {
         //删除模组根据简称的引用
         if (modObject === userModMap[modObject.modName.split('.').last()])
             userModMap.remove(modObject.modName.split('.').last())
-        delRoute(router, user, modObject)
+        delRoute(router, "user/$user", modObject)
     }
 
     /**
@@ -199,9 +200,17 @@ object ModManager {
     }
 
     private fun addRoute(router: Router, path: String, mod: BaseMod) {
+        val modClass = mod.javaClass
         router.delete(path)
+        val needBody = modClass.getAnnotation(NeedBody::class.java)
+        if (needBody != null) {
+            val bodyHandler = BodyHandler.create()
+            if (needBody.maxSize > 0) bodyHandler.setBodyLimit(needBody.maxSize)
+            router.route("$path/*").handler(bodyHandler)
+            router.post(path)
+        }
         val route = router.route(path)
-        if (mod.javaClass.getAnnotation(NoBlocking::class.java) != null) {
+        if (modClass.getAnnotation(NoBlocking::class.java) != null) {
             route.handler(mod)
         } else {
             route.blockingHandler(mod)
@@ -214,23 +223,38 @@ object ModManager {
         val modClass = mod.javaClass
         val modPath = modClass.getAnnotation(ModPath::class.java)
         val fullPath = if (modPath != null) {
-            "/mod/user/$user/${modPath.path}"
+            "/mod/$user/${modPath.path}"
         } else {
-            "/mod/user/$user/${mod.modName}"
+            "/mod/$user/${mod.modName}"
         }
         if (routeMap[fullPath] === mod)
-            router.delete(fullPath)
+            if (modClass.getAnnotation(NeedBody::class.java) != null) {
+                router.delete("$fullPath/*")
+                router.delete(fullPath)
+            } else {
+                router.delete(fullPath)
+            }
 
         if (modPath != null) {
             modPath.path.forEach {
-                val path = "/mod/user/$user/$it"
+                val path = "/mod/$user/$it"
                 if (path != fullPath && routeMap[path] === mod)
-                    router.delete(path)
+                    if (modClass.getAnnotation(NeedBody::class.java) != null) {
+                        router.delete("$path/*")
+                        router.delete(path)
+                    } else {
+                        router.delete(path)
+                    }
             }
         } else {
-            val path = "/mod/user/$user/${mod.modName.split('.').last()}"
+            val path = "/mod/$user/${mod.modName.split('.').last()}"
             if (path != fullPath && routeMap[path] === mod)
-                router.delete(path)
+                if (modClass.getAnnotation(NeedBody::class.java) != null) {
+                    router.delete("$path/*")
+                    router.delete(path)
+                } else {
+                    router.delete(path)
+                }
         }
     }
 }

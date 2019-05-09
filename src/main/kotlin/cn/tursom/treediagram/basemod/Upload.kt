@@ -3,6 +3,7 @@ package cn.tursom.treediagram.basemod
 import cn.tursom.treediagram.modinterface.BaseMod
 import cn.tursom.treediagram.modinterface.ModException
 import cn.tursom.treediagram.modinterface.ModPath
+import cn.tursom.treediagram.modinterface.NeedBody
 import cn.tursom.treediagram.token.getToken
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.http.HttpServerResponse
@@ -20,6 +21,7 @@ import java.io.Serializable
  * 返回的是上传到服务器的目录
  */
 @ModPath("upload", "upload/:filename")
+@NeedBody(10 * 1024 * 1024)
 class Upload : BaseMod() {
 
     override fun handle(
@@ -35,10 +37,10 @@ class Upload : BaseMod() {
             File(uploadPath).mkdirs()
         }
 
-        val filename = request.getHeader("filename")
+        val filename = request.getParam("filename")
+            ?: request.getHeader("filename")
             ?: throw ModException("filename not found")
         val file = File("$uploadPath$filename")
-
 
         val outputStream = when (request.getHeader("type") ?: "append") {
             "create" -> {

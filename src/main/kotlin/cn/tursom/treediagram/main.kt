@@ -1,7 +1,9 @@
 package cn.tursom.treediagram
 
 import cn.tursom.database.async.vertx
+import cn.tursom.tools.fromJson
 import cn.tursom.tools.sendGet
+import cn.tursom.tools.sendPost
 import cn.tursom.tools.sha256
 import cn.tursom.treediagram.modloader.ModManager
 import cn.tursom.treediagram.token.TokenData
@@ -9,6 +11,7 @@ import com.google.gson.Gson
 import io.vertx.core.Handler
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
+import java.io.File
 import kotlin.system.exitProcess
 
 val router: Router = Router.router(vertx)
@@ -34,21 +37,23 @@ fun main() {
     server.requestHandler(router::handle)
     server.listen(8086)
 
-//    router.routes.forEach {
-//        println(it.path)
-//    }
+    router.routes.forEach {
+        println(it.path)
+    }
 
     try {
-        println(
-            sendGet(
-                "http://127.0.0.1:8086/mod/system/register/tursom",
-                headers = mapOf("password" to "test".sha256()!!)
-            )
-        )
-        println(
+        val token = gson.fromJson(
             sendGet(
                 "http://127.0.0.1:8086/mod/system/login/tursom",
                 headers = mapOf("password" to "test".sha256()!!)
+            ), ReturnData::class.java
+        ).result as String
+
+        println(
+            sendPost(
+                "http://127.0.0.1:8086/mod/system/upload/build.gradle",
+                File("build.gradle").readBytes(),
+                headers = mapOf("token" to token)
             )
         )
     } catch (e: Throwable) {

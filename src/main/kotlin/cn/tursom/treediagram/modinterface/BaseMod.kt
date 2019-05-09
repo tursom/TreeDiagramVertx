@@ -8,6 +8,10 @@ import io.vertx.core.http.HttpServerResponse
 import io.vertx.ext.web.RoutingContext
 import java.io.File
 import java.io.Serializable
+import java.util.logging.Level
+import java.util.logging.Logger
+
+private val modLogger = Logger.getLogger("Mod Logger")!!
 
 @NoBlocking
 abstract class BaseMod : Handler<RoutingContext> {
@@ -16,7 +20,7 @@ abstract class BaseMod : Handler<RoutingContext> {
      * 在调用的时候会自动创建目录，不必担心目录不存在的问题
      * 如果有模组想储存文件请尽量使用这个目录
      */
-    val modPath by lazy {
+    val modPath = run {
         val path = "${BaseMod::class.java.getResource("/").path!!}${this::class.java.name}/"
         val dir = File(path)
         if (!dir.exists()) dir.mkdirs()
@@ -26,14 +30,15 @@ abstract class BaseMod : Handler<RoutingContext> {
     /**
      * 当模组被初始化时被调用
      */
-    open fun init() {}
+    open fun init() {
+        modLogger.log(Level.INFO, "mod $modName init")
+    }
 
     /**
      * 处理模组调用请求
-     * @param token 解析过后的用户token
-     * @param request 用户通过get或者post提交的数据
-     * @return 一个用于表示json数据的对象或者null
+     * @return 一个用于表示返回数据的对象或者null
      */
+    @Throws(Throwable::class)
     abstract fun handle(
         context: RoutingContext,
         request: HttpServerRequest,
@@ -43,9 +48,12 @@ abstract class BaseMod : Handler<RoutingContext> {
     override fun handle(context: RoutingContext) {
         val response = context.response()
         val ret = ReturnData(
-            true, try {
+            true,
+            try {
                 val request = context.request()
                 handle(context, request, response)
+            } catch (e: ModException) {
+                e.message
             } catch (e: Throwable) {
                 if (e.message != null)
                     "${e.javaClass}: ${e.message}"
@@ -59,7 +67,9 @@ abstract class BaseMod : Handler<RoutingContext> {
     /**
      * 当模组生命周期结束时被调用
      */
-    open fun destroy() {}
+    open fun destroy() {
+        modLogger.log(Level.INFO, "mod $modName destroy")
+    }
 
     /**
      * 方便获取ServletRequest里面的数据
