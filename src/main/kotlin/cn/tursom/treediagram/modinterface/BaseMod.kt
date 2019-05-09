@@ -68,7 +68,7 @@ abstract class BaseMod : Handler<RoutingContext> {
     operator fun HttpServerRequest.get(key: String): String? = (this.getHeader(key) ?: this.getParam(key))
 }
 
-val BaseMod.modName
+val BaseMod.modName: String
     get() = this.javaClass.name
 
 val BaseMod.simpName
