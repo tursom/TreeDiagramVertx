@@ -2,6 +2,7 @@ package cn.tursom.treediagram.basemod
 
 import cn.tursom.treediagram.modinterface.BaseMod
 import cn.tursom.treediagram.modinterface.ModPath
+import cn.tursom.treediagram.modinterface.NoBlocking
 import cn.tursom.treediagram.token.getToken
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.http.HttpServerResponse
@@ -12,6 +13,7 @@ import java.io.Serializable
 /**
  * 获取上传的文件的列表
  */
+@NoBlocking
 @ModPath("UploadFileList")
 class GetUploadFileList : BaseMod() {
     override fun handle(
