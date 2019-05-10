@@ -4,7 +4,7 @@ import cn.tursom.treediagram.modinterface.BaseMod
 import cn.tursom.treediagram.modinterface.ModPath
 import cn.tursom.treediagram.modinterface.NoBlocking
 import cn.tursom.treediagram.modloader.ModManager.loadMod
-import cn.tursom.treediagram.router
+import io.vertx.ext.web.Router
 import java.io.File
 import java.io.FileNotFoundException
 import java.net.URL
@@ -24,7 +24,8 @@ class ModLoader(
     configData: ClassData,
     private val user: String? = null,
     rootPath: String? = null,
-    loadInstantly: Boolean = true
+    loadInstantly: Boolean = true,
+    val router: Router
 ) {
     //要加载的类名
     private val className: Array<String> = configData.classname!!
@@ -57,8 +58,19 @@ class ModLoader(
      * 辅助构造函数
      * config是一个ClassData类的json格式对象
      */
-    constructor(config: String, user: String? = null, rootPath: String? = null, loadInstantly: Boolean = true)
-            : this(ConfigManager(config).getData(ClassData::class.java)!!, user, rootPath, loadInstantly)
+    constructor(
+        config: String,
+        user: String? = null,
+        rootPath: String? = null,
+        loadInstantly: Boolean = true,
+        router: Router
+    ) : this(
+        ConfigManager(config).getData(ClassData::class.java)!!,
+        user,
+        rootPath,
+        loadInstantly,
+        router
+    )
 
     /**
      * 手动加载模组
@@ -72,6 +84,7 @@ class ModLoader(
                 //获取一个指定模组的对象
                 val modClass = myClassLoader!!.loadClass(className)
                 val modObject = modClass.getConstructor().newInstance() as BaseMod
+                modObject.router = router
                 //加载模组
                 if (user == null)
                     loadMod(modObject)

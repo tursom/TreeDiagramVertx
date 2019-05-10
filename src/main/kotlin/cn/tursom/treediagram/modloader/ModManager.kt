@@ -1,7 +1,6 @@
 package cn.tursom.treediagram.modloader
 
 import cn.tursom.treediagram.modinterface.*
-import cn.tursom.treediagram.router
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.handler.BodyHandler
 import java.io.File
@@ -19,7 +18,7 @@ object ModManager {
 
     private val userModMapMap: Hashtable<String, Hashtable<String, BaseMod>> = Hashtable()
 
-    init {
+    fun loadBaseMod(router: Router) {
         //加载系统模组
         arrayOf(
             cn.tursom.treediagram.basemod.Echo(),
@@ -32,7 +31,10 @@ object ModManager {
             cn.tursom.treediagram.basemod.GetUploadFileList(),
             cn.tursom.treediagram.basemod.Register(),
             cn.tursom.treediagram.basemod.Login()
-        ).forEach(ModManager::loadMod)
+        ).forEach {
+            it.router = router
+            loadMod(it)
+        }
     }
 
     fun getSystemMod(modName: String) = systemModMap[modName]
@@ -46,6 +48,8 @@ object ModManager {
     internal fun loadMod(mod: BaseMod) {
         //输出日志信息
         logger.info("loading mod: ${mod::class.java.name}")
+
+        val router = mod.router!!
         //调用模组的初始化函数
         mod.init()
         //将模组的信息加载到系统中
@@ -84,6 +88,8 @@ object ModManager {
         //输出日志信息
         logger.info("loading mod: ${mod::class.java.name}\nuser: $user")
 
+        val router = mod.router!!
+
         //调用模组的初始化函数
         mod.init()
         //将模组的信息加载到系统中
@@ -120,7 +126,7 @@ object ModManager {
         return mod.modName
     }
 
-    fun loadMod(configData: ClassData, user: String? = null, rootPath: String? = null): Boolean {
+    fun loadMod(configData: ClassData, user: String? = null, rootPath: String? = null, router: Router): Boolean {
         //要加载的类名
         val className: Array<String> = configData.classname!!
         //类加载器
@@ -145,6 +151,7 @@ object ModManager {
                 //获取一个指定模组的对象
                 val modClass = myClassLoader!!.loadClass(className1)
                 val modObject = modClass.getConstructor().newInstance() as BaseMod
+                modObject.router = router
                 //加载模组
                 if (user == null)
                     loadMod(modObject)
@@ -178,6 +185,8 @@ object ModManager {
         //删除模组根据简称的引用
         if (modObject === userModMap[modObject.modName.split('.').last()])
             userModMap.remove(modObject.modName.split('.').last())
+
+        val router = modObject.router!!
         delRoute(router, "user/$user", modObject)
     }
 
@@ -196,6 +205,8 @@ object ModManager {
         //删除模组根据简称的引用
         if (modObject === systemModMap[modObject.modName.split('.').last()])
             systemModMap.remove(modObject.modName.split('.').last())
+
+        val router = modObject.router!!
         delRoute(router, "system", modObject)
     }
 
@@ -226,11 +237,8 @@ object ModManager {
 
     private fun delRoute(router: Router, subPath: String, mod: BaseMod) {
         val modClass = mod.javaClass
-        val modPath = modClass.getAnnotation(ModPath::class.java)
 
         val fullPath = "/mod/$subPath/${mod.modName}"
-
-
         if (routeMap[fullPath] === mod)
             if (modClass.getAnnotation(NeedBody::class.java) != null) {
                 router.delete("$fullPath/*")
@@ -239,6 +247,7 @@ object ModManager {
                 router.delete(fullPath)
             }
 
+        val modPath = modClass.getAnnotation(ModPath::class.java)
         if (modPath != null) {
             modPath.path.forEach {
                 val path = "/mod/$subPath/$it"
@@ -249,7 +258,6 @@ object ModManager {
             val path = "/mod/$subPath/${mod.modName.split('.').last()}"
             if (path != fullPath && routeMap[path] === mod)
                 router.delete(path)
-
         }
     }
 }

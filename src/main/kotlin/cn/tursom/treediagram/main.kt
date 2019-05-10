@@ -15,12 +15,12 @@ import java.io.File
 import java.net.URLEncoder
 import kotlin.system.exitProcess
 
-val router: Router = Router.router(vertx)
 val gson = Gson()
 
 fun main() {
+    val router: Router = Router.router(vertx)
     val server = vertx.createHttpServer()
-    ModManager
+    ModManager.loadBaseMod(router)
     val handler = Handler<RoutingContext> handler@{ context ->
         try {
             val request = context.request()
@@ -48,18 +48,18 @@ fun main() {
             ), ReturnData::class.java
         ).result as String
 
-        Regex("/mod/system/upload/(?<p0>[^/]+)/(?<p1>[^/]+)/.*")
+        val filename = URLEncoder.encode("海星.txt", "utf-8")
 
         println(
             sendGet(
-                "http://127.0.0.1:8086/mod/system/upload/delete/build.gradle",
+                "http://127.0.0.1:8086/mod/system/upload/delete/$filename",
                 headers = mapOf("token" to token)
             )
         )
 
         println(
             sendPost(
-                "http://127.0.0.1:8086/mod/system/upload/${URLEncoder.encode("海星.txt", "utf-8")}",
+                "http://127.0.0.1:8086/mod/system/upload/$filename",
                 File("build.gradle").readBytes(),
                 headers = mapOf("token" to token)
             )

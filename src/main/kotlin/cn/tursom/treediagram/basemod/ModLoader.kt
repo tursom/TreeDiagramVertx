@@ -37,14 +37,17 @@ class ModLoader : BaseMod() {
                 modData ?: throw ModException("no mod get"),
                 token.usr,
                 Upload.getUploadPath(token.usr!!),
-                false
+                false,
+                router!!
             )
         } else {
             if (findUser(token.usr!!)?.level != "admin") throw ModException("user not admin")
             cn.tursom.treediagram.modloader.ModLoader(
                 request["modData"] ?: throw ModException("no mod get"),
-                null, Upload.getUploadPath(token.usr),
-                false
+                null,
+                Upload.getUploadPath(token.usr),
+                false,
+                router!!
             )
         }
         if (!modLoader.load()) throw ModException("mod load error")

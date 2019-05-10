@@ -5,6 +5,7 @@ import cn.tursom.treediagram.gson
 import io.vertx.core.Handler
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.http.HttpServerResponse
+import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import java.io.File
 import java.io.Serializable
@@ -15,6 +16,9 @@ private val modLogger = Logger.getLogger("Mod Logger")!!
 
 @NoBlocking
 abstract class BaseMod : Handler<RoutingContext> {
+
+    var router: Router? = null
+
     /**
      * 模组私有目录
      * 在调用的时候会自动创建目录，不必担心目录不存在的问题
