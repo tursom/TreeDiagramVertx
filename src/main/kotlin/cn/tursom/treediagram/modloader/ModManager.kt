@@ -202,14 +202,19 @@ object ModManager {
     private fun addRoute(router: Router, path: String, mod: BaseMod) {
         val modClass = mod.javaClass
         router.delete(path)
+
+        val route = when {
+            modClass.getAnnotation(GetMod::class.java) != null -> router.get(path)
+            modClass.getAnnotation(PostMod::class.java) != null -> router.post(path)
+            else -> router.route(path)
+        }
+
         val needBody = modClass.getAnnotation(NeedBody::class.java)
         if (needBody != null) {
             val bodyHandler = BodyHandler.create()
             if (needBody.maxSize > 0) bodyHandler.setBodyLimit(needBody.maxSize)
-            router.route("$path/*").handler(bodyHandler)
-            router.post(path)
+            route.handler(bodyHandler)
         }
-        val route = router.route(path)
         if (modClass.getAnnotation(NoBlocking::class.java) != null) {
             route.handler(mod)
         } else {
@@ -219,14 +224,13 @@ object ModManager {
     }
 
 
-    private fun delRoute(router: Router, user: String, mod: BaseMod) {
+    private fun delRoute(router: Router, subPath: String, mod: BaseMod) {
         val modClass = mod.javaClass
         val modPath = modClass.getAnnotation(ModPath::class.java)
-        val fullPath = if (modPath != null) {
-            "/mod/$user/${modPath.path}"
-        } else {
-            "/mod/$user/${mod.modName}"
-        }
+
+        val fullPath = "/mod/$subPath/${mod.modName}"
+
+
         if (routeMap[fullPath] === mod)
             if (modClass.getAnnotation(NeedBody::class.java) != null) {
                 router.delete("$fullPath/*")
@@ -237,24 +241,15 @@ object ModManager {
 
         if (modPath != null) {
             modPath.path.forEach {
-                val path = "/mod/$user/$it"
+                val path = "/mod/$subPath/$it"
                 if (path != fullPath && routeMap[path] === mod)
-                    if (modClass.getAnnotation(NeedBody::class.java) != null) {
-                        router.delete("$path/*")
-                        router.delete(path)
-                    } else {
-                        router.delete(path)
-                    }
+                    router.delete(path)
             }
         } else {
-            val path = "/mod/$user/${mod.modName.split('.').last()}"
+            val path = "/mod/$subPath/${mod.modName.split('.').last()}"
             if (path != fullPath && routeMap[path] === mod)
-                if (modClass.getAnnotation(NeedBody::class.java) != null) {
-                    router.delete("$path/*")
-                    router.delete(path)
-                } else {
-                    router.delete(path)
-                }
+                router.delete(path)
+
         }
     }
 }

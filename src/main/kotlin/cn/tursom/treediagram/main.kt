@@ -12,6 +12,7 @@ import io.vertx.core.Handler
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import java.io.File
+import java.net.URLEncoder
 import kotlin.system.exitProcess
 
 val router: Router = Router.router(vertx)
@@ -37,9 +38,7 @@ fun main() {
     server.requestHandler(router::handle)
     server.listen(8086)
 
-    router.routes.forEach {
-        println(it.path)
-    }
+    router.routes.forEach { println(it.path) }
 
     try {
         val token = gson.fromJson(
@@ -49,9 +48,18 @@ fun main() {
             ), ReturnData::class.java
         ).result as String
 
+        Regex("/mod/system/upload/(?<p0>[^/]+)/(?<p1>[^/]+)/.*")
+
+        println(
+            sendGet(
+                "http://127.0.0.1:8086/mod/system/upload/delete/build.gradle",
+                headers = mapOf("token" to token)
+            )
+        )
+
         println(
             sendPost(
-                "http://127.0.0.1:8086/mod/system/upload/build.gradle",
+                "http://127.0.0.1:8086/mod/system/upload/${URLEncoder.encode("海星.txt", "utf-8")}",
                 File("build.gradle").readBytes(),
                 headers = mapOf("token" to token)
             )
