@@ -2,7 +2,7 @@ package cn.tursom.treediagram.basemod
 
 import cn.tursom.treediagram.datastruct.GroupEmailData
 import cn.tursom.treediagram.modinterface.BaseMod
-import cn.tursom.treediagram.token.getToken
+import cn.tursom.treediagram.token.token
 import com.google.gson.Gson
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.http.HttpServerResponse
@@ -19,7 +19,7 @@ class GroupEmail : BaseMod() {
         request: HttpServerRequest,
         response: HttpServerResponse
     ): Serializable? {
-        request.getToken()!!
+        request.token!!
         try {
             val groupEmailData = GroupEmailData(
                 request["host"],

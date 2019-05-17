@@ -3,9 +3,8 @@ package cn.tursom.treediagram.basemod
 import cn.tursom.treediagram.modinterface.BaseMod
 import cn.tursom.treediagram.modinterface.ModException
 import cn.tursom.treediagram.modinterface.ModPath
-import cn.tursom.treediagram.token.TokenData
-import cn.tursom.treediagram.token.findUser
-import cn.tursom.treediagram.token.getToken
+import cn.tursom.treediagram.modloader.ClassData
+import cn.tursom.treediagram.token.token
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.http.HttpServerResponse
 import io.vertx.ext.web.RoutingContext
@@ -22,30 +21,41 @@ import java.io.Serializable
  * 本模组会根据提供的信息自动寻找模组并加载
  * 模组加载的根目录为使用Upload上传的根目录
  */
-@ModPath("loadmod", "loadmod/:modData")
+@ModPath("loadmod/:jarPath/:className", "loadmod/:modData", "loadmod")
 class ModLoader : BaseMod() {
     override fun handle(
         context: RoutingContext,
         request: HttpServerRequest,
         response: HttpServerResponse
     ): Serializable? {
-        val token = request.getToken()!!
+        val token = request.token!!
         val modData = request["modData"]
         println(modData)
-        val modLoader = if (request["system"] != "true") {
+        val modLoader = if (modData != null) {
             cn.tursom.treediagram.modloader.ModLoader(
-                modData ?: throw ModException("no mod get"),
-                token.usr,
+                modData.urlDecode,
+                if (request["system"] != "true") {
+                    token.usr
+                } else {
+                    null
+                },
                 Upload.getUploadPath(token.usr!!),
                 false,
                 router!!
             )
         } else {
-            if (findUser(token.usr!!)?.level != "admin") throw ModException("user not admin")
             cn.tursom.treediagram.modloader.ModLoader(
-                request["modData"] ?: throw ModException("no mod get"),
-                null,
-                Upload.getUploadPath(token.usr),
+                ClassData(
+                    null,
+                    request["jarPath"]?.urlDecode ?: throw ModException("no mod get"),
+                    arrayOf(request["className"]?.urlDecode ?: throw ModException("no mod get"))
+                ),
+                if (request["system"] != "true") {
+                    token.usr
+                } else {
+                    null
+                },
+                Upload.getUploadPath(token.usr!!),
                 false,
                 router!!
             )

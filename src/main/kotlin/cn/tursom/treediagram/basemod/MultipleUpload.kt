@@ -5,7 +5,7 @@ import cn.tursom.treediagram.modinterface.BaseMod
 import cn.tursom.treediagram.modinterface.ModException
 import cn.tursom.treediagram.basemod.Upload.Companion.getUploadPath
 import cn.tursom.treediagram.modinterface.NeedBody
-import cn.tursom.treediagram.token.getToken
+import cn.tursom.treediagram.token.token
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.http.HttpServerResponse
 import io.vertx.ext.web.RoutingContext
@@ -28,7 +28,7 @@ class MultipleUpload : BaseMod() {
         request: HttpServerRequest,
         response: HttpServerResponse
     ): Serializable? {
-        val token = request.getToken()!!
+        val token = request.token!!
         val uploadList = ArrayList<String>()
         //确保上传用目录可用
         val uploadPath = getUploadPath(token.usr!!)

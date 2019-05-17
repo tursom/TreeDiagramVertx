@@ -9,6 +9,7 @@ import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import java.io.File
 import java.io.Serializable
+import java.net.URLDecoder
 import java.util.logging.Level
 import java.util.logging.Logger
 
@@ -80,6 +81,9 @@ abstract class BaseMod : Handler<RoutingContext> {
      * 使得子类中可以直接使用request[ 参数名 ]的形式来获取数据
      */
     operator fun HttpServerRequest.get(key: String): String? = (this.getHeader(key) ?: this.getParam(key))
+
+    val String.urlDecode: String
+        get() = URLDecoder.decode(this, "utf-8")
 }
 
 val BaseMod.modName: String

@@ -3,7 +3,7 @@ package cn.tursom.treediagram.basemod
 import cn.tursom.tools.fromJson
 import cn.tursom.treediagram.datastruct.MultipleEmailData
 import cn.tursom.treediagram.modinterface.BaseMod
-import cn.tursom.treediagram.token.getToken
+import cn.tursom.treediagram.token.token
 import com.google.gson.Gson
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.http.HttpServerResponse
@@ -17,7 +17,7 @@ class MultipleEmail : BaseMod() {
         request: HttpServerRequest,
         response: HttpServerResponse
     ): Serializable? {
-        request.getToken()!!
+        request.token!!
         try {
             val groupEmailData = gson.fromJson<MultipleEmailData>(request["message"]!!)
             groupEmailData.send()

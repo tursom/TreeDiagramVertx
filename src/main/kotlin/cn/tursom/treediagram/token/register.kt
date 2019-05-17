@@ -1,9 +1,10 @@
 package cn.tursom.treediagram.token
 
-import cn.tursom.database.SQLAdapter
+import cn.tursom.database.async.AsyncSqlAdapter
 import cn.tursom.tools.sha256
 import cn.tursom.treediagram.SystemDatabase
 import io.vertx.core.http.HttpServerRequest
+import kotlinx.coroutines.runBlocking
 
 /**
  * 本文件用来处理当用户尝试注册一个新用户时的逻辑
@@ -15,7 +16,7 @@ import io.vertx.core.http.HttpServerRequest
  * @param password 新用户密码
  * @param level 新用户权限等级
  */
-private fun addUser(username: String, password: String, level: String) {
+private suspend fun addUser(username: String, password: String, level: String) {
     val firstUser = UserData(username, "$username$password$username$password".sha256()!!, level)
     SystemDatabase.database.insert(firstUser)
 }
@@ -23,9 +24,9 @@ private fun addUser(username: String, password: String, level: String) {
 /**
  * 是否是一个刚建立的，没有任何数据的服务器
  */
-private var newServer = run {
+private var newServer = runBlocking {
     //首先尝试从数据库中取一条数据
-    val adapter = SQLAdapter(UserData::class.java)
+    val adapter = AsyncSqlAdapter(UserData::class.java)
     SystemDatabase.database.select(adapter, maxCount = 1)
     //判断是否真的有数据
     adapter.size == 0
@@ -47,7 +48,7 @@ private var newServer = run {
  * @param request 请求的request对象
  * @return 处理结果，json数据
  */
-fun register(request: HttpServerRequest): String {
+suspend fun register(request: HttpServerRequest): String {
     //如果数据库内无任何用户，则可以直接创建一个admin权限的用户
     return if (newServer) {
         //如果没有数据，说明现在没有任何用户注册
@@ -77,9 +78,11 @@ fun register(request: HttpServerRequest): String {
             //满足以上两个调解则注册新用户
             else -> {
                 //获取新用户用户名
-                val username = request.getParam("username") ?: return "{\"state\":false,\"result\":\"user name is null\"}"
+                val username =
+                    request.getParam("username") ?: return "{\"state\":false,\"result\":\"user name is null\"}"
                 //获取新用户密码
-                val password = request.getParam("password") ?: return "{\"state\":false,\"result\":\"password is null\"}"
+                val password =
+                    request.getParam("password") ?: return "{\"state\":false,\"result\":\"password is null\"}"
                 //获取要注册的用户的权限
                 val level = request.getParam("level")
                 //添加新用户

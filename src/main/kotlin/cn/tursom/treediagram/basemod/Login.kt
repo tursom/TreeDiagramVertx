@@ -6,6 +6,7 @@ import cn.tursom.treediagram.token.login
 import io.vertx.core.http.HttpServerRequest
 import io.vertx.core.http.HttpServerResponse
 import io.vertx.ext.web.RoutingContext
+import kotlinx.coroutines.runBlocking
 import java.io.Serializable
 
 @ModPath("login", "login/:name")
@@ -17,7 +18,7 @@ class Login : BaseMod() {
     ): Serializable? {
         val username = request.getParam("name")
         val password = request.getParam("password")
-        return login(username, password)
+        return runBlocking { login(username, password) }
     }
 
     override fun handle(context: RoutingContext) {
@@ -25,6 +26,6 @@ class Login : BaseMod() {
         val response = context.response()
         val username = request.getHeader("name") ?: request.getParam("name")
         val password = request.getHeader("password") ?: request.getParam("password")
-        response.end(login(username, password))
+        response.end(runBlocking { login(username, password) })
     }
 }

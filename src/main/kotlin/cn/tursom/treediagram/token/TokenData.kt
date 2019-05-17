@@ -3,6 +3,7 @@ package cn.tursom.treediagram.token
 import cn.tursom.tools.*
 import com.google.gson.Gson
 import io.vertx.core.http.HttpServerRequest
+import kotlinx.coroutines.runBlocking
 
 /**
  * token的结构为
@@ -20,7 +21,7 @@ import io.vertx.core.http.HttpServerRequest
 @Suppress("DataClassPrivateConstructor")
 data class TokenData private constructor(
     val usr: String?,  //用户名
-    val lev: String? = run {
+    val lev: String? = runBlocking {
         val user = findUser(usr!!)
         user?.level ?: "user"
     }, //用户权限
@@ -49,7 +50,11 @@ data class TokenData private constructor(
          * @param username 用户名
          * @return 一整个token
          */
-        internal fun getToken(username: String, password: String, exp: Long? = 1000 * 60 * 60 * 24 * 3): String? {
+        internal suspend fun getToken(
+            username: String,
+            password: String,
+            exp: Long? = 1000 * 60 * 60 * 24 * 3
+        ): String? {
             return if (tryLogin(username, password)) {
                 val body = "$digestFunctionBase64.${gson.toJson(TokenData(username, exp = exp)).base64()}"
                 "$body.${"$body.$secretKey".md5()}"
@@ -79,7 +84,8 @@ data class TokenData private constructor(
     }
 }
 
-fun HttpServerRequest.getToken(): TokenData? {
-    val tokenStr = getHeader("token") ?: getParam("token") ?: return null
-    return TokenData.parseToken(tokenStr)
-}
+val HttpServerRequest.token: TokenData?
+    get() {
+        val tokenStr = getHeader("token") ?: getParam("token") ?: return null
+        return TokenData.parseToken(tokenStr)
+    }

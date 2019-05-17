@@ -1,12 +1,13 @@
 package cn.tursom.treediagram.token
 
-import cn.tursom.database.SQLAdapter
 import cn.tursom.database.annotation.NotNull
 import cn.tursom.database.annotation.TableName
+import cn.tursom.database.async.AsyncSqlAdapter
 import cn.tursom.database.clauses.clause
 import cn.tursom.database.sqlite.SQLiteHelper
 import cn.tursom.tools.sha256
 import cn.tursom.treediagram.SystemDatabase
+import kotlinx.coroutines.runBlocking
 
 @TableName("users")
 data class UserData(
@@ -17,13 +18,13 @@ data class UserData(
 
 private val database = SQLiteHelper("${UserData::class.java.getResource("/").path!!}TreeDiagram.db")
 
-internal val userTable = run {
+internal val userTable = runBlocking {
     SystemDatabase.database.createTable(UserData::class.java)
     "users"
 }
 
-internal fun findUser(username: String): UserData? {
-    val adapter = SQLAdapter(UserData::class.java)
+internal suspend fun findUser(username: String): UserData? {
+    val adapter = AsyncSqlAdapter(UserData::class.java)
     SystemDatabase.database.select(adapter, null, where = clause {
         !UserData::username equal !username
     }, maxCount = 1)
@@ -31,7 +32,7 @@ internal fun findUser(username: String): UserData? {
     else adapter[0]
 }
 
-fun tryLogin(username: String, password: String): Boolean {
+suspend fun tryLogin(username: String, password: String): Boolean {
     //查询用户数据
     val userData = findUser(username)
     return "$username$password$username$password".sha256() == userData?.password
